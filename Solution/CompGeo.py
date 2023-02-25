@@ -3,6 +3,13 @@ import numpy as np
 from Geometry import SurfaceGeometry3D
 
 
+def generate_sphere(file_path, radius=1, center=(0, 0, 0), num_points=20):
+    import pyvista as pv
+    sphere = pv.Sphere(radius, center=center, theta_resolution=num_points, phi_resolution=num_points)
+    mesh_obj = sphere.triangulate()
+    mesh_obj.save(file_path)
+
+
 class ComposeGeometry(object):
     def __init__(self,  stl_file):
 
@@ -74,7 +81,9 @@ class ComposeGeometry(object):
         new_mesh.vectors = new_vertices[new_faces]
         new_mesh.save(self.output_file_name)
 
+        print(self.output_file_name + " successfully created!")
+
 
 if __name__ == '__main__':
-    compGeo = ComposeGeometry('Part.stl')
+    compGeo = ComposeGeometry('../Inputs/Part.stl')
     compGeo.add_skirt(0.0)
