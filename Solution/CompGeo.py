@@ -21,7 +21,7 @@ class ComposeGeometry(object):
             raise Exception("Your geometry is a closed volume. This is invalid geometry to proceed!")
 
         if len(self.geo.boundary_nodes) == 1:
-            self.boundary_nodes = self.geo.boundary_nodes[0]
+            self.boundary_nodes = self.geo.boundary_nodes[0][::-1]
         else:
             raise Exception("The geometry is invalid. There are more than one perimeter existed!")
 
@@ -43,7 +43,9 @@ class ComposeGeometry(object):
         boundary_nodes_transformed = self.geo.transform_points(boundary_vertices,
                                                                self.geo.global_origin, self.geo.global_basis,
                                                                origin, basis)
-        origin = boundary_vertices[np.argmax(boundary_nodes_transformed[:, 2])] + offset * normal
+        origin_temp = boundary_vertices[np.argmax(boundary_nodes_transformed[:, 2])]
+
+        origin = self.geo.project_to_plane(origin, origin_temp, normal) + offset * normal
 
         return origin, basis
 
@@ -77,6 +79,8 @@ class ComposeGeometry(object):
 
         new_vertices = np.vstack([new_vertices, new_projected_vertices])
 
+        new_vertices[:, 2] -= np.mean(new_projected_vertices[:, 2])
+
         new_mesh = stl.mesh.Mesh(np.zeros(new_faces.shape[0], dtype=stl.mesh.Mesh.dtype))
         new_mesh.vectors = new_vertices[new_faces]
         new_mesh.save(self.output_file_name)
@@ -85,5 +89,5 @@ class ComposeGeometry(object):
 
 
 if __name__ == '__main__':
-    compGeo = ComposeGeometry('../Inputs/Part.stl')
+    compGeo = ComposeGeometry('../Geometries/Part.stl')
     compGeo.add_skirt(0.0)
