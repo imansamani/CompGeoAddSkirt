@@ -29,6 +29,8 @@ class ComposeGeometry(object):
 
     def __find_master_plane(self, offset):
 
+        assert offset >= 0., "Please set the offset to be a non negative number!"
+
         boundary_vertices = self.geo.vertices[self.boundary_nodes]
 
         origin = self.geo.centroid(boundary_vertices)
@@ -49,7 +51,9 @@ class ComposeGeometry(object):
 
         return origin, basis
 
-    def add_skirt(self, offset):
+    def add_skirt(self, offset, wall_angle):
+
+        assert 45 <= wall_angle <= 90, "Please set the wall angle between 75 and 90 degrees!"
 
         mst_origin, mst_basis = self.__find_master_plane(offset)
 
@@ -62,6 +66,26 @@ class ComposeGeometry(object):
         new_projected_vertices = self.geo.transform_points(projected_vertices,
                                                            self.geo.global_origin, self.geo.global_basis,
                                                            mst_origin, mst_basis)
+
+        for i in range(len(new_projected_vertices)-1):
+            n1 = new_projected_vertices[i]
+            n2 = new_projected_vertices[i+1]
+            vector = n1 - n2
+            edge_normal = np.array([vector[1], -vector[0], 0.])
+            edge_normal = edge_normal / np.linalg.norm(edge_normal)
+            length = np.linalg.norm(boundary_vertices[i] - projected_vertices[i]) / np.tan(np.deg2rad(wall_angle))
+            edge_normal = length * edge_normal
+            new_projected_vertices[i] = new_projected_vertices[i] + edge_normal
+
+        i = len(new_projected_vertices) - 1
+        n1 = new_projected_vertices[i]
+        n2 = new_projected_vertices[0]
+        vector = n1 - n2
+        edge_normal = np.array([vector[1], -vector[0], 0.])
+        edge_normal = edge_normal / np.linalg.norm(edge_normal)
+        length = np.linalg.norm(boundary_vertices[i] - projected_vertices[i]) / np.tan(np.deg2rad(wall_angle))
+        edge_normal = length * edge_normal
+        new_projected_vertices[i] = new_projected_vertices[i] + edge_normal
 
         new_boundary_nodes = np.array([i + self.geo.n_vertices for i in range(len(new_projected_vertices))])
 
@@ -90,4 +114,4 @@ class ComposeGeometry(object):
 
 if __name__ == '__main__':
     compGeo = ComposeGeometry('../Geometries/Part.stl')
-    compGeo.add_skirt(0.0)
+    compGeo.add_skirt(10.0, 90)
